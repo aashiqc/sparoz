@@ -118,10 +118,97 @@ const Logo = ({ className }: { className?: string }) => (
   />
 );
 
+const WOMEN_IMAGES = [
+  "/assets/women-bra-pink.jpg",
+  "/assets/women-bra-blue.jpg",
+  "/assets/women-bra-sage.jpg",
+  "/assets/women-bra-gift.jpg",
+  "/assets/women-bra-trio.jpg",
+];
+
+const STATS: { to: number; suffix: React.ReactNode; eyebrow: string; line: string }[] = [
+  {
+    to: 28,
+    suffix: <span className="red">.</span>,
+    eyebrow: "Years on shelf",
+    line: "Three generations of the same family stitching the same standard.",
+  },
+  {
+    to: 14,
+    suffix: <span className="blue">.</span>,
+    eyebrow: "Sizes per style",
+    line: "From AA to DD, XS to 3XL — drafted for real Indian bodies, not catalogue ones.",
+  },
+  {
+    to: 100,
+    suffix: <span className="red">%</span>,
+    eyebrow: "Mill to label",
+    line: "Every spool of yarn is sourced, dyed and stitched within thirty kilometres of our shop.",
+  },
+  {
+    to: 30,
+    suffix: <span className="blue">d</span>,
+    eyebrow: "Return window",
+    line: "Wear it, wash it, decide later. If the fit isn't right we'll take it back, no fine print.",
+  },
+];
+
+function Counter({
+  to,
+  suffix,
+  className,
+}: {
+  to: number;
+  suffix?: React.ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setValue(to);
+      return;
+    }
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        obs.disconnect();
+        const duration = 1400;
+        const start = performance.now();
+        let raf = 0;
+        const tick = (now: number) => {
+          const t = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          setValue(Math.round(to * eased));
+          if (t < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+      },
+      { threshold: 0.45 }
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [to]);
+
+  return (
+    <div ref={ref} className={className}>
+      {value}
+      {suffix}
+    </div>
+  );
+}
+
 export default function Home() {
   const [subscribed, setSubscribed] = useState(false);
   const [email, setEmail] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [womenIdx, setWomenIdx] = useState(0);
+  const cycleWomen = (delta: number) =>
+    setWomenIdx((i) => (i + delta + WOMEN_IMAGES.length) % WOMEN_IMAGES.length);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
@@ -139,6 +226,28 @@ export default function Home() {
       menuTriggerRef.current?.focus();
     };
   }, [menuOpen]);
+
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>(".bluejay-page .reveal");
+    if (!els.length) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      els.forEach((el) => el.classList.add("in"));
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("in");
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.18, rootMargin: "0px 0px -60px 0px" }
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
 
   const onSubscribe = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -360,7 +469,7 @@ export default function Home() {
                 <path d="M4 7h16v10H4z" />
                 <path d="M4 11h16" />
               </svg>
-              Made in Kerala, India
+              Made in Tirupur, India
             </div>
           </div>
         </div>
@@ -383,15 +492,16 @@ export default function Home() {
       {/* CATEGORIES */}
       <section className="cat wrap" id="women">
         <div className="cat-head">
-          <h2 className="display">
+          <h2 className="display reveal">
             Two aisles, <span className="sf">one</span> standard of comfort.
           </h2>
           <div className="index">— 01 / Shop by category</div>
         </div>
         <div className="cat-grid">
-          <a href="#" className="cat-card women">
+          <div className="cat-card women">
             <img
-              src="/assets/women-bra-pink.jpg"
+              key={womenIdx}
+              src={WOMEN_IMAGES[womenIdx]}
               alt="Women's collection"
               width="900"
               height="720"
@@ -400,12 +510,31 @@ export default function Home() {
             />
             <div className="overlay"></div>
             <div className="label">For Her</div>
-            <div className="count">5 Styles</div>
+            <div className="count">
+              {womenIdx + 1} / {WOMEN_IMAGES.length}
+            </div>
             <div className="title">
               <h3>Women</h3>
-              <div className="arr">→</div>
+              <div className="arrs">
+                <button
+                  type="button"
+                  className="arr"
+                  onClick={() => cycleWomen(-1)}
+                  aria-label="Previous image"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  className="arr"
+                  onClick={() => cycleWomen(1)}
+                  aria-label="Next image"
+                >
+                  →
+                </button>
+              </div>
             </div>
-          </a>
+          </div>
           <a href="#" className="cat-card men" id="men">
             <img
               src="/assets/men-brief-red.jpg"
@@ -432,7 +561,7 @@ export default function Home() {
           <div className="num">02</div>
           <div className="mid">
             <span className="eyebrow">The drop · this season</span>
-            <h2 className="display">Featured pieces</h2>
+            <h2 className="display reveal">Featured pieces</h2>
           </div>
         </div>
 
@@ -476,7 +605,7 @@ export default function Home() {
       <section className="statement" id="story">
         <div className="wrap">
           <div className="statement-grid">
-            <h2 className="display">
+            <h2 className="display reveal">
               <span>Built</span>{" "}
               <span className="red">for the</span>{" "}
               <span className="stroke">layer</span>{" "}
@@ -486,22 +615,22 @@ export default function Home() {
             <div>
               <div className="body">
                 <p>
-                  Blue Jay began as a small workshop in Muvattupuzha — three
-                  partners, a single cutting table, and the quiet conviction
+                  Blue Jay began as a small workshop in Muvattupuzha — a sole
+                  proprietorship, one cutting table, and the quiet conviction
                   that the layer closest to your skin should be the softest
                   thing you wear all day.
                 </p>
                 <p>
                   We still cut every piece in the same town, still hand-finish
                   the seams, still test every fit on real bodies before it
-                  ships out of Pezhakkapilly.
+                  ships out of Pezhakkappilly.
                 </p>
               </div>
               <div className="statement-meta">
                 <div className="meta-row">
                   <span className="k">Workshop</span>
                   <span className="v">
-                    Efess Complex <span className="sf">Muvattupuzha</span>
+                    Thekkekara Complex <span className="sf">Muvattupuzha</span>
                   </span>
                 </div>
                 <div className="meta-row">
@@ -522,46 +651,13 @@ export default function Home() {
       <section className="stats">
         <div className="wrap">
           <div className="stats-grid">
-            <div className="stat">
-              <div className="n">
-                28<span className="red">.</span>
+            {STATS.map((s) => (
+              <div className="stat" key={s.eyebrow}>
+                <Counter to={s.to} suffix={s.suffix} className="n" />
+                <div className="eyebrow">{s.eyebrow}</div>
+                <div className="l">{s.line}</div>
               </div>
-              <div className="eyebrow">Years on shelf</div>
-              <div className="l">
-                Three generations of the same family stitching the same
-                standard.
-              </div>
-            </div>
-            <div className="stat">
-              <div className="n">
-                14<span className="blue">.</span>
-              </div>
-              <div className="eyebrow">Sizes per style</div>
-              <div className="l">
-                From AA to DD, XS to 3XL — drafted for real Indian bodies, not
-                catalogue ones.
-              </div>
-            </div>
-            <div className="stat">
-              <div className="n">
-                100<span className="red">%</span>
-              </div>
-              <div className="eyebrow">Mill to label</div>
-              <div className="l">
-                Every spool of yarn is sourced, dyed and stitched within thirty
-                kilometres of our shop.
-              </div>
-            </div>
-            <div className="stat">
-              <div className="n">
-                30<span className="blue">d</span>
-              </div>
-              <div className="eyebrow">Return window</div>
-              <div className="l">
-                Wear it, wash it, decide later. If the fit isn't right we'll
-                take it back, no fine print.
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -582,7 +678,7 @@ export default function Home() {
           </div>
           <div className="ed-text">
             <span className="eyebrow">— A note from the workshop</span>
-            <h3 className="display">
+            <h3 className="display reveal">
               The first layer <span className="sf">deserves</span> the most
               thought.
             </h3>
@@ -618,9 +714,9 @@ export default function Home() {
               >
                 <span className="dot"></span> Walk in &amp; try on
               </span>
-              <h2 className="display" style={{ marginTop: 18 }}>
-                Find us <span className="sf">at</span> Efess Complex,
-                Pezhakkapilly.
+              <h2 className="display reveal" style={{ marginTop: 18 }}>
+                Find us <span className="sf">at</span> Thekkekara Complex,
+                Muvattupuzha.
               </h2>
               <p className="desc">
                 Three floors of cotton, modal and bamboo basics, with fitting
@@ -631,11 +727,11 @@ export default function Home() {
                 <div className="vi-block">
                   <div className="lbl">Address</div>
                   <div className="val">
-                    14/138 A, Efess Complex
+                    Thekkekara Building, Near Sabine Hospital
                     <br />
-                    Pezhakkapilly P.O, Muvattupuzha
+                    Pezhakkappilly P.O, Muvattupuzha
                     <br />
-                    Ernakulam Dist, Kerala — 686 674
+                    Ernakulam Dist, Kerala — 686 673
                   </div>
                 </div>
                 <div className="vi-block">
@@ -728,7 +824,7 @@ export default function Home() {
       <footer>
         <div className="wrap">
           <div className="news">
-            <h2 className="display">
+            <h2 className="display reveal">
               Stay <span className="sf">soft.</span>
               <br />
               Stay in touch.

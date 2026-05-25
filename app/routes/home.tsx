@@ -695,9 +695,8 @@ export default function Home() {
               disappears into your day and shows up again, day after day, the
               same as it always was.
             </p>
-            <div className="signature">— Muhammed Shefin, Ashraf &amp; Najeeb</div>
             <div className="by">
-              Founder · Info · HR &nbsp;·&nbsp; Sparoz Apparels, Muvattupuzha
+              The Sparoz Apparels team · Muvattupuzha
             </div>
           </div>
         </div>
